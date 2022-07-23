@@ -62,10 +62,10 @@ def optimize(f, x, opt, epoch):
     return xs, values
 
 
-def optimize_pcgrad(f, x, opt, epoch):
+def optimize_pcgrad(f, x, opt, epoch, reduction='sum'):
     values = [[] for _ in f.layers]
     xs = []
-    pc_grad = PCGrad(opt, 'sum')
+    pc_grad = PCGrad(opt, reduction=reduction)
     for e in tqdm(range(epoch)):
         pc_grad.zero_grad()
         losses = f(x)

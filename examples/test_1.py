@@ -10,3 +10,7 @@ def f2(x):
 
 
 f = VectorFunction(f1, f2)
+max_epoch = 1000
+lr = 5e-4
+seed = 42
+n = 2
