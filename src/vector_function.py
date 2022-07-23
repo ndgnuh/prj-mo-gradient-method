@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 from tqdm import tqdm
+from src.pcgrad import PCGrad
 
 
 class NPVectorFunction:
@@ -22,18 +23,56 @@ class NPVectorFunction:
 #         return VectorFunction(*[elementwise_grad(f) for f in self.fs])
 
 
-class VectorFunction(nn.Module):
-    def __init__(self, modules):
+class Lambda(nn.Module):
+
+    def __init__(self, func):
         super().__init__()
-        self.modules = modules
+        self.func = func
 
     def forward(self, x):
-        ys = [module(x) for module in self.modules]
-        return torch.stack(ys)
+        return self.func(x)
+
+
+class VectorFunction(nn.Module):
+    def __init__(self, *funcs):
+        super().__init__()
+        self.layers = nn.ModuleList([Lambda(f) for f in funcs])
+
+    def forward(self, x):
+        ys = []
+        for module in self.layers:
+            y = module(x)
+            ys.append(y)
+        return ys
 
 
 def optimize(f, x, opt, epoch):
-    values = []
+    values = [[] for _ in f.layers]
     xs = []
-    for e in tqdm(epoch):
-        y = f(x)
+    for e in tqdm(range(epoch)):
+        opt.zero_grad()
+        ys = f(x)
+        loss = sum(ys)
+        loss.backward()
+        opt.step()
+        xs.append(x.detach().numpy())
+        for i, y in enumerate(ys):
+            values[i].append(y.item())
+
+    return xs, values
+
+
+def optimize_pcgrad(f, x, opt, epoch):
+    values = [[] for _ in f.layers]
+    xs = []
+    pc_grad = PCGrad(opt, 'sum')
+    for e in tqdm(range(epoch)):
+        pc_grad.zero_grad()
+        losses = f(x)
+        pc_grad.pc_backward(losses)
+        pc_grad.step()
+        xs.append(x.detach().numpy())
+        for i, y in enumerate(losses):
+            values[i].append(y.item())
+
+    return xs, values

@@ -4,3 +4,4 @@ autograd
 numpy
 scipy
 tqdm
+matplotlib
