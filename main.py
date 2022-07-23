@@ -15,6 +15,12 @@ class VectorFunction:
     def __iter__(self):
         return iter(self.fs)
 
+    def grad(self):
+        return VectorFunction(*[grad(f) for f in self.fs])
+
+    def egrad(self):
+        return VectorFunction(*[elementwise_grad(f) for f in self.fs])
+
 
 def f1(x):
     a = [25, 1, 1, 1, 1, 0]
@@ -60,7 +66,7 @@ def find_d_k(fs, dfs, x):
 
 
 def msdm(fs, x, sigma=0.5, max_k=2):
-    dfs = VectorFunction(*[elementwise_grad(f) for f in fs])
+    dfs = fs.egrad()
     jf = jacobian(fs)
     for k in range(max_k):
         print("Step: ", k)
