@@ -1,5 +1,5 @@
 import numpy as np
-from examples.test_3 import (
+from examples.test_2 import (
     f,
     max_epoch,
     n,

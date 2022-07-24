@@ -43,17 +43,36 @@ class VectorFunction(nn.Module):
         for module in self.layers:
             y = module(x)
             ys.append(y)
-        return ys
+        return torch.stack(ys)
+
+
+@torch.no_grad()
+def armijo_step_size(f, x, grad, lr=1):
+    # Tìm alpha
+    jacob = torch.autograd.functional.jacobian(f, (x,))
+    # print(len(jacob))
+    # print(jacob[0].shape)
+    jacob = jacob[0]
+    alpha = 1
+    for i in range(150):
+        alpha = alpha / 2
+        c = f(x + alpha * grad) - f(x) - lr * alpha * (jacob @ grad)
+        if c.all() < 0:
+            return alpha
+    return 1
 
 
 def optimize(f, x, opt, epoch):
     values = [[] for _ in f.layers]
     xs = []
+    lr = opt.param_groups[0]['lr']
     for e in tqdm(range(epoch)):
         opt.zero_grad()
         ys = f(x)
         loss = sum(ys)
         loss.backward()
+        step_size = armijo_step_size(f, x, x.grad, lr=lr)
+        x.grad = x.grad * step_size
         opt.step()
         xs.append(x.detach().numpy())
         for i, y in enumerate(ys):
@@ -66,10 +85,13 @@ def optimize_pcgrad(f, x, opt, epoch, reduction='sum'):
     values = [[] for _ in f.layers]
     xs = []
     pc_grad = PCGrad(opt, reduction=reduction)
+    lr = opt.param_groups[0]['lr']
     for e in tqdm(range(epoch)):
         pc_grad.zero_grad()
         losses = f(x)
         pc_grad.pc_backward(losses)
+        step_size = armijo_step_size(f, x, x.grad, lr=lr)
+        x.grad = x.grad * step_size
         pc_grad.step()
         xs.append(x.detach().numpy())
         for i, y in enumerate(losses):
