@@ -145,8 +145,11 @@ def project_grad(jf):
     ljf_pc = deepcopy(ljf)
     for (i, _) in enumerate(ljf_pc):
         g_i = ljf_pc[i]
-        shuffle(ljf)
-        for g_j in ljf:
+        perm = np.random.permutation(len(ljf))
+        for j in perm:
+            if i == j:
+                continue
+            g_j = ljf[j]
             g_i_g_j = torch.dot(g_i, g_j)
             if g_i_g_j < 0:
                 ljf_pc[i] = ljf_pc[i] - g_i_g_j / (torch.norm(g_j)**2) * g_j
