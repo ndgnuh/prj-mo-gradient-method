@@ -106,11 +106,11 @@ def armijo_step_size(f, x, grad, control=0.5):
     alpha = 1
     m = torch.matmul(jacob, grad)
     t = -control * m
-    for i in range(120):
+    for i in range(100):
         alpha = alpha / 2
         lhs = f(x) - f(x + alpha * grad)
         rhs = alpha * t
-        if torch.all(lhs >= rhs):
+        if torch.all(lhs >= rhs - 1e-4):
             return alpha
     return alpha
 
@@ -119,12 +119,12 @@ def armijo_step_size(f, x, grad, control=0.5):
 def optimize(f, x, epoch):
     values = [[] for _ in f.layers]
     xs = []
-    lr = 1
     for e in tqdm(range(epoch)):
+        x = nn.Parameter(x)
         losses = f(x)
         dk = find_descend(f, x)
-        step_size = armijo_step_size(f, x, dk, lr=lr)
-        x = x + dk * step_size * lr
+        step_size = armijo_step_size(f, x, dk)
+        x = x + dk * step_size
         phi_ = phi(dk, f, x)
         print('phi', phi_, 'step_size', step_size)
 
@@ -159,7 +159,8 @@ def optimize(f, x, epoch):
 def project_grad(jf):
     ljf = [grad for grad in jf]
     ljf_pc = deepcopy(ljf)
-    for (i, g_i) in enumerate(ljf_pc):
+    for (i, _) in enumerate(ljf_pc):
+        g_i = ljf_pc[i]
         shuffle(ljf)
         for g_j in ljf:
             g_i_g_j = torch.dot(g_i, g_j)
@@ -175,16 +176,13 @@ def optimize_pcgrad(f, x, epoch, reduction='sum'):
     # epoch = 3
     for e in tqdm(range(epoch)):
         jf = jacobian(f, x)
-        # print('jf', jf)
         jf_pc = project_grad(jf)
-        # print('pc', jf_pc)
         dk = -jf_pc.sum(dim=0)
         losses = f(x)
         step_size = armijo_step_size(f, x, dk)
         phi_ = phi(dk, f, x)
         print('phi', phi_, 'step_size', step_size)
-        # print('step_size', step_size)
-        x = x + dk * 1e-3  # step_size
+        x = x + dk * step_size
         xs.append(x.detach().numpy())
         for i, y in enumerate(losses):
             values[i].append(y.item())
