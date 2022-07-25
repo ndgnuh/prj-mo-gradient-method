@@ -119,12 +119,15 @@ def armijo_step_size(f, x, grad, control=0.5, start=1):
 def optimize(f, x, epoch):
     values = [[] for _ in f.layers]
     xs = []
+    momentum = 0.05
+    changed = 0
     for e in tqdm(range(epoch)):
         x = nn.Parameter(x)
         losses = f(x)
         dk = find_descend(f, x)
         step_size = armijo_step_size(f, x, dk)
-        x = x + dk * step_size
+        changed = dk * step_size + momentum * changed
+        x = x + changed
         phi_ = phi(dk, f, x)
         print('phi', phi_, 'step_size', step_size)
 
@@ -155,6 +158,8 @@ def optimize_pcgrad(f, x, epoch, reduction='sum'):
     values = [[] for _ in f.layers]
     xs = []
     # epoch = 3
+    momentum = 0.05
+    changed = 0
     for e in tqdm(range(epoch)):
         jf = jacobian(f, x)
         jf_pc = project_grad(jf)
@@ -163,7 +168,8 @@ def optimize_pcgrad(f, x, epoch, reduction='sum'):
         step_size = armijo_step_size(f, x, dk)
         phi_ = phi(dk, f, x)
         print('phi', phi_, 'step_size', step_size)
-        x = x + dk * step_size
+        changed = dk * step_size + momentum * changed
+        x = x + changed
         xs.append(x.detach().numpy())
         for i, y in enumerate(losses):
             values[i].append(y.item())
@@ -176,6 +182,8 @@ def optimize_pcgrad_multiarmijo(f, x, epoch, reduction='sum'):
     values = [[] for _ in f.layers]
     xs = []
     # epoch = 3
+    changed = 0
+    momentum = 0.05
     for e in tqdm(range(epoch)):
         jf = jacobian(f, x)
         step_sizes = torch.tensor([
@@ -187,7 +195,8 @@ def optimize_pcgrad_multiarmijo(f, x, epoch, reduction='sum'):
         step_size = armijo_step_size(f, x, dk, start=1)
         phi_ = phi(dk, f, x)
         print('phi', phi_, 'step_size', step_size)
-        x = x + dk * step_size
+        changed = dk * step_size + momentum * changed
+        x = x + changed
         xs.append(x.detach().numpy())
         for i, y in enumerate(losses):
             values[i].append(y.item())
