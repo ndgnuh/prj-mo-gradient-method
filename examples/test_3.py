@@ -17,4 +17,4 @@ f = VectorFunction(f1, f2)
 max_epoch = 2000
 lr = 5e-4
 seed = 42
-n = 30
+n = 2

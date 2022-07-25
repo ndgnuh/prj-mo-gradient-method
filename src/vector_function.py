@@ -2,10 +2,10 @@ import numpy as np
 import torch
 from torch import nn
 from tqdm import tqdm
-from src.pcgrad import PCGrad
+# from src.pcgrad import PCGrad
 from scipy.optimize import fmin, NonlinearConstraint, minimize
 from torch.autograd.functional import jacobian
-from copy import copy, deepcopy
+from copy import deepcopy
 from random import shuffle
 
 
@@ -58,13 +58,14 @@ def phi(d, f, x):
     return torch.max(torch.matmul(jf, d)) + 0.5 * torch.norm(d) ** 2
 
 
+# @torch.no_grad()
+# def find_descend(f, x):
+#     out = fmin(phi, x, args=(f, x), disp=False)
+#     return torch.tensor(out, dtype=x.dtype)
+
+
 @torch.no_grad()
 def find_descend(f, x):
-    out = fmin(phi, x, args=(f, x), disp=False)
-    return torch.tensor(out, dtype=x.dtype)
-
-
-def find_descend2(f, x):
     m = x.shape[0]
     n = len(f.layers)
     d = torch.zeros(m + 1, dtype=x.dtype)
@@ -101,10 +102,7 @@ def find_descend2(f, x):
 
 @torch.no_grad()
 def armijo_step_size(f, x, grad, lr=1):
-    # Tìm alpha
     jacob = jacobian(f, x)
-    # print(len(jacob))
-    # print(jacob[0].shape)
     jacob = jacob[0]
     alpha = 1
     for i in range(100):
@@ -122,7 +120,7 @@ def optimize(f, x, epoch):
     lr = 1
     for e in tqdm(range(epoch)):
         losses = f(x)
-        dk = find_descend2(f, x)
+        dk = find_descend(f, x)
         step_size = armijo_step_size(f, x, dk, lr=lr)
         x = x + dk * step_size * lr
 
@@ -135,23 +133,23 @@ def optimize(f, x, epoch):
     return xs, values
 
 
-def optimize_pcgrad(f, x, opt, epoch, reduction='sum'):
-    values = [[] for _ in f.layers]
-    xs = []
-    pc_grad = PCGrad(opt, reduction=reduction)
-    lr = opt.param_groups[0]['lr']
-    for e in tqdm(range(epoch)):
-        pc_grad.zero_grad()
-        losses = f(x)
-        pc_grad.pc_backward(losses)
-        step_size = armijo_step_size(f, x, x.grad, lr=lr)
-        x.grad = x.grad * step_size
-        pc_grad.step()
-        xs.append(x.detach().numpy())
-        for i, y in enumerate(losses):
-            values[i].append(y.item())
+# def optimize_pcgrad(f, x, opt, epoch, reduction='sum'):
+#     values = [[] for _ in f.layers]
+#     xs = []
+#     pc_grad = PCGrad(opt, reduction=reduction)
+#     lr = opt.param_groups[0]['lr']
+#     for e in tqdm(range(epoch)):
+#         pc_grad.zero_grad()
+#         losses = f(x)
+#         pc_grad.pc_backward(losses)
+#         step_size = armijo_step_size(f, x, x.grad, lr=lr)
+#         x.grad = x.grad * step_size
+#         pc_grad.step()
+#         xs.append(x.detach().numpy())
+#         for i, y in enumerate(losses):
+#             values[i].append(y.item())
 
-    return xs, values
+#     return xs, values
 
 
 def project_grad(jf):
@@ -167,22 +165,21 @@ def project_grad(jf):
 
 
 @torch.no_grad()
-def optimize_pcgrad(f, x, opt, epoch, reduction='sum'):
+def optimize_pcgrad(f, x, epoch, reduction='sum'):
     values = [[] for _ in f.layers]
     xs = []
-    lr = 0.5
     # epoch = 3
     for e in tqdm(range(epoch)):
         jf = jacobian(f, x)
         # print('jf', jf)
         jf_pc = project_grad(jf)
         # print('pc', jf_pc)
-        dk = jf_pc.mean(dim=0)
+        dk = -jf_pc.sum(dim=0)
         losses = f(x)
-        step_size = armijo_step_size(f, x, dk, lr=lr)
+        step_size = armijo_step_size(f, x, dk)
         print('phi', phi(dk, f, x))
         # print('step_size', step_size)
-        x = x - dk * step_size * lr
+        x = x + dk * step_size
         xs.append(x.detach().numpy())
         for i, y in enumerate(losses):
             values[i].append(y.item())

@@ -1,5 +1,5 @@
 import numpy as np
-from examples.test_2 import (
+from examples.test_5 import (
     f,
     max_epoch,
     n,
@@ -31,8 +31,7 @@ xs, values = optimize(f, x, max_epoch)
 
 torch.manual_seed(seed)
 x = nn.Parameter(torch.rand(n))
-opt = torch.optim.AdamW((x,), lr=lr)
-xspc, valuespc = optimize_pcgrad(f, x, opt, max_epoch)
+xspc, valuespc = optimize_pcgrad(f, x, max_epoch)
 
 # print("xs", xs[-1])
 # print("xspc", xspc[-1])
