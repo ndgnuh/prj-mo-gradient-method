@@ -1,5 +1,5 @@
 import numpy as np
-from examples.test_3 import (
+from examples.test_5 import (
     f,
     max_epoch,
     n,
@@ -50,15 +50,15 @@ def plot_per_epoch(max_epoch, y, ypc):
     plt.show()
 
 
-def plot_pareto_like(y, ypc):
+def plot_pareto_like(y, ypc, type='values'):
     ax = plt.subplot(211)
     plt.scatter(y[0], y[1])
     ax.ticklabel_format(useOffset=False, style='plain')
-    plt.xlabel("Pareto values with normal update rule")
+    plt.xlabel(f"Pareto {type} with normal update rule")
     ax = plt.subplot(212)
     plt.scatter(ypc[0], ypc[1])
     ax.ticklabel_format(useOffset=False, style='plain')
-    plt.xlabel("Pareto values with PCGrad update rule")
+    plt.xlabel(f"Pareto {type} with PCGrad update rule")
     plt.show()
 
 
@@ -69,8 +69,14 @@ values = np.array(values)
 valuespc = np.array(valuespc)
 pareto = values[:, idx]
 paretopc = valuespc[:, idx]
-print(values.shape, idx.shape, pareto.shape)
 
 # PLOT
 plot_per_epoch(max_epoch, values, valuespc)
 plot_pareto_like(pareto, paretopc)
+xs = np.array(xs)
+xspc = np.array(xspc)
+print(xs.shape)
+if xs.shape[-1] == 2:
+    x_pareto = xs[idx, :]
+    xpc_pareto = xspc[idx, :]
+    plot_pareto_like(x_pareto, xpc_pareto, type='points')
