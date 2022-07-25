@@ -98,3 +98,16 @@ def optimize_pcgrad(f, x, opt, epoch, reduction='sum'):
             values[i].append(y.item())
 
     return xs, values
+
+
+def find_dominate_set(xs):
+    if not isinstance(xs, torch.Tensor):
+        # Shape: n * d
+        xs = torch.tensor(xs).transpose(0, 1)
+
+    le = xs[None, :, :] <= xs[:, None, :]
+    lt = xs[None, :, :] < xs[:, None, :]
+    is_dominated = torch.all(le, dim=-1) & torch.any(lt, dim=-1)
+    dominated = is_dominated.any(dim=1)
+    idx = torch.where(torch.logical_not(dominated))
+    return idx[0]

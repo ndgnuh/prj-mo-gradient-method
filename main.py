@@ -12,8 +12,11 @@ from src.vector_function import (
     VectorFunction,
     optimize,
     optimize_pcgrad,
+    find_dominate_set,
 )
 from matplotlib import pyplot as plt
+
+max_epoch = 100
 
 
 def last_not_na(xs):
@@ -32,8 +35,8 @@ x = nn.Parameter(torch.rand(n))
 opt = torch.optim.AdamW((x,), lr=lr)
 xspc, valuespc = optimize_pcgrad(f, x, opt, max_epoch)
 
-print("xs", xs[-1])
-print("xspc", xspc[-1])
+# print("xs", xs[-1])
+# print("xspc", xspc[-1])
 
 
 def plot_per_epoch(max_epoch, y, ypc):
@@ -51,11 +54,21 @@ def plot_per_epoch(max_epoch, y, ypc):
 
 def plot_pareto_like(y, ypc):
     plt.subplot(211)
-    plt.plot(y[0], y[1])
+    plt.scatter(y[0], y[1])
     plt.subplot(212)
-    plt.plot(ypc[0], ypc[1])
+    plt.scatter(ypc[0], ypc[1])
     plt.show()
 
 
+# idx_pc = find_dominate_set(valuespc)
+idx = find_dominate_set(values)
+idxpc = find_dominate_set(valuespc)
+values = np.array(values)
+valuespc = np.array(valuespc)
+pareto = values[:, idx]
+paretopc = valuespc[:, idx]
+print(values.shape, idx.shape, pareto.shape)
+
+# PLOT
 plot_per_epoch(max_epoch, values, valuespc)
-plot_pareto_like(values, valuespc)
+plot_pareto_like(pareto, paretopc)
