@@ -27,8 +27,7 @@ def last_not_na(xs):
 
 torch.manual_seed(seed)
 x = nn.Parameter(torch.rand(n))
-opt = torch.optim.AdamW((x,), lr=lr)
-xs, values = optimize(f, x, opt, max_epoch)
+xs, values = optimize(f, x, max_epoch)
 
 torch.manual_seed(seed)
 x = nn.Parameter(torch.rand(n))
