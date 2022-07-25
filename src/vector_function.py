@@ -101,9 +101,9 @@ def find_descend(f, x):
 
 
 @torch.no_grad()
-def armijo_step_size(f, x, grad, control=0.5):
+def armijo_step_size(f, x, grad, control=0.5, start=1):
     jacob = jacobian(f, x)
-    alpha = 1
+    alpha = start
     m = torch.matmul(jacob, grad)
     t = -control * m
     for i in range(100):
@@ -137,25 +137,6 @@ def optimize(f, x, epoch):
     return xs, values
 
 
-# def optimize_pcgrad(f, x, opt, epoch, reduction='sum'):
-#     values = [[] for _ in f.layers]
-#     xs = []
-#     pc_grad = PCGrad(opt, reduction=reduction)
-#     lr = opt.param_groups[0]['lr']
-#     for e in tqdm(range(epoch)):
-#         pc_grad.zero_grad()
-#         losses = f(x)
-#         pc_grad.pc_backward(losses)
-#         step_size = armijo_step_size(f, x, x.grad, lr=lr)
-#         x.grad = x.grad * step_size
-#         pc_grad.step()
-#         xs.append(x.detach().numpy())
-#         for i, y in enumerate(losses):
-#             values[i].append(y.item())
-
-#     return xs, values
-
-
 def project_grad(jf):
     ljf = [grad for grad in jf]
     ljf_pc = deepcopy(ljf)
@@ -177,9 +158,33 @@ def optimize_pcgrad(f, x, epoch, reduction='sum'):
     for e in tqdm(range(epoch)):
         jf = jacobian(f, x)
         jf_pc = project_grad(jf)
-        dk = -jf_pc.sum(dim=0)
+        dk = -getattr(jf_pc, reduction)(dim=0)
         losses = f(x)
         step_size = armijo_step_size(f, x, dk)
+        phi_ = phi(dk, f, x)
+        print('phi', phi_, 'step_size', step_size)
+        x = x + dk * step_size
+        xs.append(x.detach().numpy())
+        for i, y in enumerate(losses):
+            values[i].append(y.item())
+
+    return xs, values
+
+
+@torch.no_grad()
+def optimize_pcgrad_multiarmijo(f, x, epoch, reduction='sum'):
+    values = [[] for _ in f.layers]
+    xs = []
+    # epoch = 3
+    for e in tqdm(range(epoch)):
+        jf = jacobian(f, x)
+        step_sizes = torch.tensor([
+            armijo_step_size(f_i, x, -dk_i)
+            for (f_i, dk_i) in zip(f.layers, jf)])
+        jf_pc = project_grad(jf * step_sizes[:, None])
+        dk = -getattr(jf_pc, reduction)(dim=0)
+        losses = f(x)
+        step_size = armijo_step_size(f, x, dk, start=1)
         phi_ = phi(dk, f, x)
         print('phi', phi_, 'step_size', step_size)
         x = x + dk * step_size
