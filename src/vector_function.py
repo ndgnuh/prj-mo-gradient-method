@@ -122,8 +122,10 @@ def optimize(f, x, epoch):
         dk = find_descend(f, x)
         step_size = armijo_step_size(f, x, dk, lr=lr)
         x = x + dk * step_size * lr
+        phi_ = phi(dk, f, x)
+        print('phi', phi_, 'step_size', step_size)
 
-        if torch.abs(phi(dk, f, x)) < 1e-6:
+        if torch.abs(phi_) < 1e-6:
             break
         xs.append(x.detach().numpy())
         for i, y in enumerate(losses):
@@ -176,7 +178,8 @@ def optimize_pcgrad(f, x, epoch, reduction='sum'):
         dk = -jf_pc.sum(dim=0)
         losses = f(x)
         step_size = armijo_step_size(f, x, dk)
-        print('phi', phi(dk, f, x))
+        phi_ = phi(dk, f, x)
+        print('phi', phi_, 'step_size', step_size)
         # print('step_size', step_size)
         x = x + dk * step_size
         xs.append(x.detach().numpy())
