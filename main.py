@@ -1,5 +1,5 @@
 import numpy as np
-from examples.test_5 import (
+from examples.test_3 import (
     f,
     max_epoch,
     n,
@@ -16,8 +16,6 @@ from src.vector_function import (
 )
 from matplotlib import pyplot as plt
 
-max_epoch = 100
-
 
 def last_not_na(xs):
     for i, x in enumerate(reversed(xs)):
@@ -33,28 +31,34 @@ torch.manual_seed(seed)
 x = nn.Parameter(torch.rand(n))
 xspc, valuespc = optimize_pcgrad(f, x, max_epoch)
 
-# print("xs", xs[-1])
-# print("xspc", xspc[-1])
+print("xs", xs[-1])
+print("xspc", xspc[-1])
 
 
 def plot_per_epoch(max_epoch, y, ypc):
     for i, y in enumerate(y):
-        plt.subplot(221 + i)
+        ax = plt.subplot(221 + i)
         plt.plot(range(max_epoch), y)
         plt.xlabel(f"f{i + 1} with normal update rule")
+        ax.ticklabel_format(useOffset=False, style='plain')
 
     for i, y in enumerate(ypc):
-        plt.subplot(223 + i)
+        ax = plt.subplot(223 + i)
         plt.plot(range(max_epoch), y)
+        ax.ticklabel_format(useOffset=False, style='plain')
         plt.xlabel(f"f{i + 1} with PCGrad rule")
     plt.show()
 
 
 def plot_pareto_like(y, ypc):
-    plt.subplot(211)
+    ax = plt.subplot(211)
     plt.scatter(y[0], y[1])
-    plt.subplot(212)
+    ax.ticklabel_format(useOffset=False, style='plain')
+    plt.xlabel("Pareto values with normal update rule")
+    ax = plt.subplot(212)
     plt.scatter(ypc[0], ypc[1])
+    ax.ticklabel_format(useOffset=False, style='plain')
+    plt.xlabel("Pareto values with PCGrad update rule")
     plt.show()
 
 
