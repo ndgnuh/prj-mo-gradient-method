@@ -14,7 +14,7 @@ def f2(x):
 
 
 f = VectorFunction(f1, f2)
-max_epoch = 2000
+max_epoch = 100
 lr = 5e-4
 seed = 42
-n = 2
+n = 30
