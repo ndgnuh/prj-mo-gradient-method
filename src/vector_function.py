@@ -101,15 +101,18 @@ def find_descend(f, x):
 
 
 @torch.no_grad()
-def armijo_step_size(f, x, grad, lr=1):
+def armijo_step_size(f, x, grad, control=0.5):
     jacob = jacobian(f, x)
     alpha = 1
-    for i in range(100):
+    m = torch.matmul(jacob, grad)
+    t = -control * m
+    for i in range(120):
         alpha = alpha / 2
-        c = f(x + alpha * grad) - f(x) - lr * alpha * torch.matmul(jacob, grad)
-        if c.all() < 0:
+        lhs = f(x) - f(x + alpha * grad)
+        rhs = alpha * t
+        if torch.all(lhs >= rhs):
             return alpha
-    return alpha + 3e-5
+    return alpha
 
 
 @torch.no_grad()
@@ -125,8 +128,8 @@ def optimize(f, x, epoch):
         phi_ = phi(dk, f, x)
         print('phi', phi_, 'step_size', step_size)
 
-        if torch.abs(phi_) < 1e-6:
-            break
+        # if torch.abs(phi_) < 1e-6:
+        #     break
         xs.append(x.detach().numpy())
         for i, y in enumerate(losses):
             values[i].append(y.item())
@@ -181,7 +184,7 @@ def optimize_pcgrad(f, x, epoch, reduction='sum'):
         phi_ = phi(dk, f, x)
         print('phi', phi_, 'step_size', step_size)
         # print('step_size', step_size)
-        x = x + dk * step_size
+        x = x + dk * 1e-3  # step_size
         xs.append(x.detach().numpy())
         for i, y in enumerate(losses):
             values[i].append(y.item())
