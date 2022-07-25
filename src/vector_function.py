@@ -103,7 +103,6 @@ def find_descend(f, x):
 @torch.no_grad()
 def armijo_step_size(f, x, grad, lr=1):
     jacob = jacobian(f, x)
-    jacob = jacob[0]
     alpha = 1
     for i in range(100):
         alpha = alpha / 2
