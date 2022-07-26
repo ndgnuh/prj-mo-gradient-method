@@ -7,7 +7,7 @@ def f(x):
 
 
 def g(x):
-    return 2 * (x[1] - 10)**4 + (x[0]-1)**2
+    return 2 * (x[1] - 10)**4 + (x[0]-1)**2 + 1
 
 
 f = VectorFunction(f, g)
