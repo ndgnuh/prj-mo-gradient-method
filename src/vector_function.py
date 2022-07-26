@@ -101,16 +101,16 @@ def find_descend(f, x):
 
 
 @torch.no_grad()
-def armijo_step_size(f, x, grad, control=0.5, start=1):
+def armijo_step_size(f, x, d, control=0.5, start=1):
     jacob = jacobian(f, x)
     alpha = start
-    m = torch.matmul(jacob, grad)
+    m = torch.matmul(jacob, d)
     t = -control * m
-    for i in range(100):
+    for i in range(20):
         alpha = alpha / 2
-        lhs = f(x) - f(x + alpha * grad)
+        lhs = f(x) - f(x + alpha * d)
         rhs = alpha * t
-        if torch.all(lhs >= rhs - 1e-4):
+        if torch.all(lhs >= rhs):
             return alpha
     return alpha
 
